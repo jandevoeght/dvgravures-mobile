@@ -32,7 +32,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DV Gravures'),
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            Image.asset('assets/logo.png', height: 34, fit: BoxFit.contain),
+            const SizedBox(width: 10),
+            const Text('Mobiel'),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Afmelden',

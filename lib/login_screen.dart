@@ -69,8 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Icon(Icons.account_balance_rounded, size: 52),
-                      const SizedBox(height: 14),
+                      Image.asset(
+                        'assets/logo.png',
+                        height: 72,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 16),
                       Text(
                         'DV Gravures',
                         textAlign: TextAlign.center,

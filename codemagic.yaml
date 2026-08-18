@@ -17,7 +17,7 @@ workflows:
       vars:
         BUNDLE_ID: be.dvgravures.mobile
         APP_DISPLAY_NAME: DV Gravures
-        APP_VERSION: 0.1.1
+        APP_VERSION: 0.1.2
 
     scripts:
       - name: Flutter packages ophalen
@@ -48,6 +48,10 @@ workflows:
 
           /usr/libexec/PlistBuddy -c "Delete :NSPhotoLibraryUsageDescription" "$INFO" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string DV Gravures gebruikt de fotobibliotheek om foto's aan een opdracht toe te voegen." "$INFO"
+
+          # De app implementeert zelf geen niet-vrijgestelde encryptie.
+          /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$INFO" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$INFO"
 
       - name: Pods installeren
         script: |

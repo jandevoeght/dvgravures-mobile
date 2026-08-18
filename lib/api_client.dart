@@ -165,6 +165,19 @@ class ApiClient {
     return _decode(response);
   }
 
+
+  String absoluteUrl(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return '';
+    final parsed = Uri.tryParse(trimmed);
+    if (parsed != null && parsed.hasScheme) return trimmed;
+
+    final api = Uri.parse(AppConfig.apiBaseUrl);
+    final origin = '${api.scheme}://${api.authority}';
+    if (trimmed.startsWith('/')) return '$origin$trimmed';
+    return '$origin/${trimmed.replaceFirst(RegExp(r'^/+'), '')}';
+  }
+
   Future<List<OrderPhoto>> photos(int orderId) async {
     final response = await _http.get(
       _uri('photos.php', {'order_id': '$orderId'}),
@@ -174,7 +187,17 @@ class ApiClient {
     final list = (data['photos'] as List? ?? const []);
     return list
         .whereType<Map>()
-        .map((e) => OrderPhoto.fromJson(Map<String, dynamic>.from(e)))
+        .map((e) {
+          final photo = OrderPhoto.fromJson(Map<String, dynamic>.from(e));
+          return OrderPhoto(
+            id: photo.id,
+            photoType: photo.photoType,
+            originalFilename: photo.originalFilename,
+            caption: photo.caption,
+            takenAt: photo.takenAt,
+            url: absoluteUrl(photo.url),
+          );
+        })
         .toList();
   }
 
@@ -197,8 +220,16 @@ class ApiClient {
     final streamed = await _http.send(request);
     final response = await http.Response.fromStream(streamed);
     final data = _decode(response);
-    return OrderPhoto.fromJson(
+    final photo = OrderPhoto.fromJson(
       Map<String, dynamic>.from(data['photo'] as Map? ?? const {}),
+    );
+    return OrderPhoto(
+      id: photo.id,
+      photoType: photo.photoType,
+      originalFilename: photo.originalFilename,
+      caption: photo.caption,
+      takenAt: photo.takenAt,
+      url: absoluteUrl(photo.url),
     );
   }
 

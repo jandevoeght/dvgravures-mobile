@@ -48,7 +48,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           .toList();
       final photos = (data['photos'] as List? ?? const [])
           .whereType<Map>()
-          .map((e) => OrderPhoto.fromJson(Map<String, dynamic>.from(e)))
+          .map((e) {
+            final photo = OrderPhoto.fromJson(Map<String, dynamic>.from(e));
+            return OrderPhoto(
+              id: photo.id,
+              photoType: photo.photoType,
+              originalFilename: photo.originalFilename,
+              caption: photo.caption,
+              takenAt: photo.takenAt,
+              url: widget.api.absoluteUrl(photo.url),
+            );
+          })
           .toList();
       if (!mounted) return;
       setState(() {
