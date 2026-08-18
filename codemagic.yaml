@@ -17,7 +17,7 @@ workflows:
       vars:
         BUNDLE_ID: be.dvgravures.mobile
         APP_DISPLAY_NAME: DV Gravures
-        APP_VERSION: 0.1.5
+        APP_VERSION: 0.1.6
 
     scripts:
       - name: Flutter packages ophalen
@@ -30,7 +30,11 @@ workflows:
             flutter create --platforms=ios .
           fi
 
-      - name: iOS-app configureren
+      - name: iOS releaseconfiguratie voorbereiden
+        script: |
+          flutter build ios --release --config-only --no-codesign
+
+      - name: iOS-app en privacyrechten configureren
         script: |
           PBXPROJ="ios/Runner.xcodeproj/project.pbxproj"
           INFO="ios/Runner/Info.plist"
@@ -38,37 +42,40 @@ workflows:
           # Bundle identifier instellen.
           sed -i '' -E "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/PRODUCT_BUNDLE_IDENTIFIER = ${BUNDLE_ID};/g" "$PBXPROJ"
 
-          # Zichtbare appnaam.
-          /usr/libexec/PlistBuddy -c "Delete :CFBundleDisplayName" "$INFO" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string ${APP_DISPLAY_NAME}" "$INFO"
+          # Gebruik Python plistlib zodat de echte XML plist betrouwbaar wordt aangepast.
+          python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
 
-          # Toestemmingen voor camera en fotobibliotheek.
-          /usr/libexec/PlistBuddy -c "Delete :NSCameraUsageDescription" "$INFO" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string DV Gravures gebruikt de camera om foto's rechtstreeks aan een opdracht toe te voegen." "$INFO"
+          path = Path("ios/Runner/Info.plist")
+          with path.open("rb") as f:
+              data = plistlib.load(f)
 
-          /usr/libexec/PlistBuddy -c "Delete :NSPhotoLibraryUsageDescription" "$INFO" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string DV Gravures gebruikt de fotobibliotheek om foto's aan een opdracht toe te voegen." "$INFO"
+          data["CFBundleDisplayName"] = "DV Gravures"
+          data["NSCameraUsageDescription"] = (
+              "DV Gravures gebruikt de camera om foto's rechtstreeks aan een opdracht toe te voegen."
+          )
+          data["NSMicrophoneUsageDescription"] = (
+              "DV Gravures gebruikt geen audio bij foto's; deze toestemming is vereist door de camera-integratie."
+          )
+          data["NSPhotoLibraryUsageDescription"] = (
+              "DV Gravures gebruikt de fotobibliotheek om foto's aan een opdracht toe te voegen."
+          )
+          data["NSPhotoLibraryAddUsageDescription"] = (
+              "DV Gravures gebruikt Foto's om afbeeldingen aan een opdracht toe te voegen."
+          )
+          data["PHPhotoLibraryPreventAutomaticLimitedAccessAlert"] = True
+          data["ITSAppUsesNonExemptEncryption"] = False
 
-          /usr/libexec/PlistBuddy -c "Delete :NSPhotoLibraryAddUsageDescription" "$INFO" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string DV Gravures gebruikt Foto’s om afbeeldingen aan een opdracht toe te voegen." "$INFO"
+          with path.open("wb") as f:
+              plistlib.dump(data, f, fmt=plistlib.FMT_XML, sort_keys=False)
+          PY
 
-          /usr/libexec/PlistBuddy -c "Delete :NSMicrophoneUsageDescription" "$INFO" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string DV Gravures gebruikt geen audio bij foto’s; deze toestemming ondersteunt de iOS-camera-integratie." "$INFO"
-
-          # Voorkom een automatische beperkte-toegangsmelding van iOS; de app toont zelf fouten/toestemmingsinformatie.
-          /usr/libexec/PlistBuddy -c "Delete :PHPhotoLibraryPreventAutomaticLimitedAccessAlert" "$INFO" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :PHPhotoLibraryPreventAutomaticLimitedAccessAlert bool true" "$INFO"
-
-          # De app implementeert zelf geen niet-vrijgestelde encryptie.
-          /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$INFO" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$INFO"
-
-      - name: iOS privacy-instellingen controleren
-        script: |
-          /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" ios/Runner/Info.plist
-          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryUsageDescription" ios/Runner/Info.plist
-          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryAddUsageDescription" ios/Runner/Info.plist
-          /usr/libexec/PlistBuddy -c "Print :NSMicrophoneUsageDescription" ios/Runner/Info.plist
+          echo "Info.plist vóór build:"
+          /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$INFO"
+          /usr/libexec/PlistBuddy -c "Print :NSMicrophoneUsageDescription" "$INFO"
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryUsageDescription" "$INFO"
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryAddUsageDescription" "$INFO"
 
       - name: Pods installeren
         script: |
@@ -87,6 +94,31 @@ workflows:
             --build-name="${APP_VERSION}" \
             --build-number="${BUILD_NUMBER}" \
             --export-options-plist=/Users/builder/export_options.plist
+
+      - name: Privacyrechten in definitieve IPA controleren
+        script: |
+          IPA="$(find build/ios/ipa -maxdepth 1 -name '*.ipa' | head -1)"
+          test -n "$IPA"
+
+          rm -rf /tmp/dv_ipa_check
+          mkdir -p /tmp/dv_ipa_check
+          unzip -q "$IPA" -d /tmp/dv_ipa_check
+
+          APP_PLIST="/tmp/dv_ipa_check/Payload/Runner.app/Info.plist"
+          test -f "$APP_PLIST"
+
+          echo "NSCameraUsageDescription in definitieve app:"
+          /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$APP_PLIST"
+
+          echo "NSMicrophoneUsageDescription in definitieve app:"
+          /usr/libexec/PlistBuddy -c "Print :NSMicrophoneUsageDescription" "$APP_PLIST"
+
+          echo "NSPhotoLibraryUsageDescription in definitieve app:"
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryUsageDescription" "$APP_PLIST"
+
+          # Expliciet falen wanneer een vereiste sleutel ontbreekt.
+          /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$APP_PLIST" >/dev/null
+          /usr/libexec/PlistBuddy -c "Print :NSMicrophoneUsageDescription" "$APP_PLIST" >/dev/null
 
     artifacts:
       - build/ios/ipa/*.ipa
