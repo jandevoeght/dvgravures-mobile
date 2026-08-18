@@ -155,8 +155,10 @@ class _TaskListPageState extends State<TaskListPage> {
               final title = task.title.trim().toLowerCase();
               return task.adminCode != 'INVOICE' &&
                   task.workflowStepCode != 'INVOICE' &&
+                  task.workflowStepCode != 'ORDERING' &&
                   title != 'factureren' &&
-                  title != 'facturatie';
+                  title != 'facturatie' &&
+                  title != 'bestellingen uitvoeren';
             })
             .toList();
         return RefreshIndicator(
