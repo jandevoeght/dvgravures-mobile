@@ -43,6 +43,9 @@ class WorkTask {
   final String? cemeteryPostalCode;
   final String? cemeteryCity;
   final String? adminCode;
+  final String? workflowState;
+  final String? workflowStepCode;
+  final String? workflowStepName;
 
   const WorkTask({
     required this.id,
@@ -68,6 +71,9 @@ class WorkTask {
     this.cemeteryPostalCode,
     this.cemeteryCity,
     this.adminCode,
+    this.workflowState,
+    this.workflowStepCode,
+    this.workflowStepName,
   });
 
   String get subject =>
@@ -109,6 +115,9 @@ class WorkTask {
         cemeteryPostalCode: json['cemetery_postal_code']?.toString(),
         cemeteryCity: json['cemetery_city']?.toString(),
         adminCode: json['admin_code']?.toString(),
+        workflowState: json['workflow_state']?.toString(),
+        workflowStepCode: json['workflow_step_code']?.toString(),
+        workflowStepName: json['workflow_step_name']?.toString(),
       );
 }
 

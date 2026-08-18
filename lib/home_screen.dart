@@ -101,54 +101,40 @@ class _TaskListPageState extends State<TaskListPage> {
     await _future;
   }
 
-  Color _statusBackground(WorkTask task) {
-    final state = task.isClosed
-        ? 'DONE'
-        : (task.statusCode.isNotEmpty ? task.statusCode : 'ACTIVE').toUpperCase();
+  String _visualState(WorkTask task) {
+    if (task.isClosed) return 'DONE';
 
-    if (task.statusName.toLowerCase().contains('geblokkeerd') ||
-        state == 'BLOCKED') {
-      return const Color(0xFFDFE3E8);
-    }
-    if (state == 'DONE' ||
-        task.statusName.toLowerCase().contains('afgewerkt')) {
-      return const Color(0xFFDCEFDC);
-    }
-    if (state == 'FUTURE' ||
-        task.statusName.toLowerCase().contains('toekomst')) {
-      return const Color(0xFFDCEcff);
-    }
-    return const Color(0xFFFFF0AD);
+    final workflow = task.workflowState?.toUpperCase() ?? '';
+    if (workflow == 'BLOCKED') return 'BLOCKED';
+    if (workflow == 'FUTURE') return 'FUTURE';
+    if (workflow == 'DONE') return 'DONE';
+
+    final status = task.statusName.toLowerCase();
+    if (status.contains('geblokkeerd')) return 'BLOCKED';
+    if (status.contains('afgewerkt') || status.contains('voltooid')) return 'DONE';
+    if (status.contains('toekomst')) return 'FUTURE';
+
+    return 'ACTIVE';
+  }
+
+  Color _statusBackground(WorkTask task) {
+    return switch (_visualState(task)) {
+      'DONE' => const Color(0xFFDCEFDC),
+      'FUTURE' => const Color(0xFFDCECFF),
+      'BLOCKED' => const Color(0xFFDFE3E8),
+      _ => const Color(0xFFFFF0AD),
+    };
   }
 
   Color _statusForeground(WorkTask task) {
-    final bg = _statusBackground(task);
-    if (bg == const Color(0xFFDFE3E8)) return const Color(0xFF4C5966);
-    if (bg == const Color(0xFFDCEFDC)) return const Color(0xFF25612C);
-    if (bg == const Color(0xFFDCEcff)) return const Color(0xFF205C9C);
-    return const Color(0xFF765900);
+    return switch (_visualState(task)) {
+      'DONE' => const Color(0xFF25612C),
+      'FUTURE' => const Color(0xFF205C9C),
+      'BLOCKED' => const Color(0xFF4C5966),
+      _ => const Color(0xFF765900),
+    };
   }
 
-  Widget _statusChip(WorkTask task) {
-    final label = task.statusName.trim().isNotEmpty
-        ? task.statusName
-        : (task.isClosed ? 'Afgewerkt' : 'Actief');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: _statusBackground(task),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: _statusForeground(task),
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +151,13 @@ class _TaskListPageState extends State<TaskListPage> {
           );
         }
         final tasks = (snapshot.data ?? const <WorkTask>[])
-            .where((task) => task.adminCode != 'INVOICE')
+            .where((task) {
+              final title = task.title.trim().toLowerCase();
+              return task.adminCode != 'INVOICE' &&
+                  task.workflowStepCode != 'INVOICE' &&
+                  title != 'factureren' &&
+                  title != 'facturatie';
+            })
             .toList();
         return RefreshIndicator(
           onRefresh: _refresh,
@@ -189,15 +181,27 @@ class _TaskListPageState extends State<TaskListPage> {
                   (task) => Padding(
                     padding: const EdgeInsets.only(bottom: 9),
                     child: Card(
+                      color: _statusBackground(task),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(14),
                         leading: CircleAvatar(
+                          backgroundColor: Colors.white.withValues(alpha: 0.72),
+                          foregroundColor: _statusForeground(task),
                           child: Text(
                             task.orderNumber?.split('-').last ?? '•',
-                            style: const TextStyle(fontSize: 11),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        title: Text(task.title),
+                        title: Text(
+                          task.title,
+                          style: TextStyle(
+                            color: _statusForeground(task),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                         subtitle: Text(
                           [
                             if (task.orderNumber?.isNotEmpty == true)
@@ -207,15 +211,13 @@ class _TaskListPageState extends State<TaskListPage> {
                             if (task.graveLocation?.isNotEmpty == true)
                               task.graveLocation!,
                           ].join('\n'),
+                          style: TextStyle(
+                            color: _statusForeground(task).withValues(alpha: 0.82),
+                          ),
                         ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            _statusChip(task),
-                            const SizedBox(height: 4),
-                            const Icon(Icons.chevron_right, size: 18),
-                          ],
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: _statusForeground(task),
                         ),
                         onTap: () async {
                           await Navigator.of(context).push(
