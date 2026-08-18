@@ -3,9 +3,11 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'api_client.dart';
+import 'camera_capture_screen.dart';
 import 'models.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -76,30 +78,74 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  Future<void> _takePhoto(ImageSource source) async {
+  Future<void> _pickFromLibrary() async {
     if (_uploading) return;
 
     try {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       final picker = ImagePicker();
-      // iOS: laat eerst de bottom sheet volledig sluiten voordat
-      // UIImagePickerController / PHPicker wordt gepresenteerd.
-      await Future<void>.delayed(const Duration(milliseconds: 450));
-
       final picked = await picker.pickImage(
-        source: source,
+        source: ImageSource.gallery,
         imageQuality: 85,
         maxWidth: 2400,
         requestFullMetadata: false,
-        preferredCameraDevice: CameraDevice.rear,
       );
       if (picked == null) return;
-
+      await _uploadPickedFile(File(picked.path));
+    } on PlatformException catch (e) {
       if (!mounted) return;
-      setState(() => _uploading = true);
+      final message = switch (e.code) {
+        'photo_access_denied' =>
+          'Geen toegang tot de fotobibliotheek. Geef DV Gravures toegang tot Foto’s in de iPhone-instellingen.',
+        _ => 'Foto selecteren kon niet worden gestart (${e.code}).',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto selecteren is mislukt.')),
+      );
+    }
+  }
 
+  Future<void> _openCamera() async {
+    if (_uploading) return;
+
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+
+      final captured = await Navigator.of(context).push<XFile>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => const CameraCaptureScreen(),
+        ),
+      );
+
+      if (captured == null) return;
+      await _uploadPickedFile(File(captured.path));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'De camera kon niet worden gestart. Controleer de cameratoegang in de iPhone-instellingen.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _uploadPickedFile(File file) async {
+    if (!mounted) return;
+    setState(() => _uploading = true);
+
+    try {
       await widget.api.uploadPhoto(
         orderId: widget.orderId,
-        file: File(picked.path),
+        file: file,
         caption: 'Mobiele foto',
       );
 
@@ -110,36 +156,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto toegevoegd aan het dossier.')),
       );
-    } on PlatformException catch (e) {
-      if (!mounted) return;
-      final message = switch (e.code) {
-        'camera_access_denied' =>
-          'Geen toegang tot de camera. Geef DV Gravures cameratoegang in de iPhone-instellingen.',
-        'photo_access_denied' =>
-          'Geen toegang tot de fotobibliotheek. Geef DV Gravures toegang tot Foto’s in de iPhone-instellingen.',
-        _ => 'Foto selecteren kon niet worden gestart (${e.code}).',
-      };
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Foto toevoegen is mislukt. De app blijft actief; probeer opnieuw of controleer de iPhone-toestemmingen.',
+            'Foto uploaden is mislukt. De app blijft actief; probeer opnieuw.',
           ),
         ),
       );
     } finally {
-      if (mounted && _uploading) {
-        setState(() => _uploading = false);
-      }
+      if (mounted) setState(() => _uploading = false);
     }
   }
 
@@ -202,7 +234,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           title: const Text('Foto maken'),
                           onTap: () {
                             Navigator.pop(context);
-                            _takePhoto(ImageSource.camera);
+                            _openCamera();
                           },
                         ),
                         ListTile(
@@ -210,7 +242,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           title: const Text('Uit fotobibliotheek'),
                           onTap: () {
                             Navigator.pop(context);
-                            _takePhoto(ImageSource.gallery);
+                            _pickFromLibrary();
                           },
                         ),
                       ],

@@ -1,16 +1,21 @@
-# DV Gravures Mobile v0.1.4
+# DV Gravures Mobile v0.1.5
 
-## Wijzigingen
-- bestaande foto-weergave uit v0.1.3 blijft behouden;
-- facturatietaken blijven uit Vandaag/Open taken;
-- iOS foto-picker is verder gehard:
-  - korte wachttijd na sluiten van het keuzemenu voordat camera/fotobibliotheek opent;
-  - `requestFullMetadata=false`;
-  - achtercamera als voorkeurscamera;
-  - extra iOS privacytekst voor microfoon;
-  - Codemagic controleert tijdens de build expliciet of alle privacykeys in Info.plist aanwezig zijn.
+## Belangrijkste wijziging
+`Foto maken` gebruikt niet langer de camera-functie van `image_picker`.
 
-Deze versie is bedoeld om de crash bij `Foto maken` / `Uit fotobibliotheek` verder uit te sluiten.
+De app gebruikt nu het officiële Flutter `camera`-pakket met een eigen camerascherm:
+- achtercamera standaard;
+- live preview;
+- aparte ontspanknop;
+- audio uitgeschakeld;
+- camera-fouten worden opgevangen in het scherm;
+- na opname wordt hetzelfde bestaande uploadproces gebruikt.
 
-## Vereist
-Gebruik samen met DV Gravures web/API **v0.6.7.4**.
+`Uit fotobibliotheek` blijft via `image_picker` werken, omdat die route op het echte iPhone-toestel al correct werkte.
+
+## Verder
+- bestaande foto-weergave via de beveiligde API blijft behouden;
+- facturatietaken blijven uit de mobiele operationele takenlijsten;
+- huisstijl/logo blijven behouden.
+
+Gebruik samen met DV Gravures webapp v0.6.7.5.
