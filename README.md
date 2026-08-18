@@ -1,32 +1,17 @@
-# DV Gravures Mobile v0.1.9
+# DV Gravures Mobile v0.2.0
 
-## Vandaag
-Een taak die in de desktopapp via Agenda & Planning op vandaag wordt gezet gebruikt `planned_date`.
-De mobiele API neemt `planned_date` nu mee in scope `today`.
+Eerste functionele werfversie.
 
-## Taakdetail
-Meer praktische informatie:
-- opdracht/overledene;
-- klant;
-- workflowstap;
-- begraafplaats + adres;
-- ligging;
-- geplande datum;
-- vervaldatum;
-- start;
-- prioriteit;
-- omschrijving;
-- status;
-- navigatie en dossierknop.
+- taakdetail compacter; adres begraafplaats niet zichtbaar;
+- navigatie blijft het adres achterliggend gebruiken;
+- extra taakinfo uit v0.1.9 blijft beschikbaar;
+- korte taaknotitie toevoegen/wijzigen (iPhone-dicteren kan in het tekstveld);
+- Vandaag toont aantal taken en aantal begraafplaatsen;
+- geplande datum uit desktopplanning is leidend voor Vandaag;
+- volledige statuskleur op taaktegels;
+- facturatietaken uitgesloten;
+- foto's openen, zoomen, omschrijving wijzigen en soft-deleten;
+- camera en fotobibliotheek blijven beschikbaar vanuit het opdrachtdossier;
+- opdracht zoeken blijft beschikbaar.
 
-## Foto’s
-- tik op een foto om ze schermvullend te openen;
-- pinch-to-zoom;
-- lang indrukken voor acties:
-  - openen;
-  - omschrijving aanpassen;
-  - verwijderen met bevestiging.
-- verwijderen is soft delete in de database.
-
-## Vereist
-Installeer eerst web/API v0.6.7.9.
+Bewust nog niet in v0.2.0: automatische routeoptimalisatie, offline synchronisatie en volledige mobiele opmetingsmodule. Die zijn geschikt voor een volgende fase.

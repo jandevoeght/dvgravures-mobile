@@ -284,6 +284,15 @@ class ApiClient {
     _decode(response);
   }
 
+  Future<void> updateTaskNote(int taskId, String note) async {
+    final response = await _http.post(
+      _uri('task-note.php'),
+      headers: _headers(json: true),
+      body: jsonEncode({'task_id': taskId, 'note': note}),
+    );
+    _decode(response);
+  }
+
   Future<void> completeManualTask(int taskId) async {
     final response = await _http.post(
       _uri('task-complete.php'),

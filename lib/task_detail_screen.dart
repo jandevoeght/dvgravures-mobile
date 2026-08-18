@@ -22,6 +22,13 @@ class TaskDetailScreen extends StatefulWidget {
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
   bool _busy = false;
   bool _done = false;
+  String? _note;
+
+  @override
+  void initState() {
+    super.initState();
+    _note = widget.task.planningNotes;
+  }
 
   Future<void> _openMaps() async {
     final address = widget.task.address;
@@ -48,6 +55,50 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       );
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _editNote() async {
+    final controller = TextEditingController(text: _note ?? '');
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Notitie bij taak'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 5,
+          maxLength: 1000,
+          decoration: const InputDecoration(
+            hintText: 'Typ of dicteer een korte notitie…',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Opslaan'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null) return;
+    try {
+      await widget.api.updateTaskNote(widget.task.id, value);
+      if (!mounted) return;
+      setState(() => _note = value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notitie opgeslagen.')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
     }
   }
 
@@ -140,18 +191,26 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   _row('Overledene', task.deceasedName),
                   _row('Workflowstap', task.workflowStepName),
                   _row('Begraafplaats', task.cemeteryName),
-                  _row('Adres', task.address),
                   _row('Ligging', task.graveLocation),
                   _row('Gepland', task.plannedDate),
                   _row('Vervaldatum', task.dueDate),
                   _row('Start', task.scheduledStart),
                   _row('Prioriteit', task.priority),
                   _row('Omschrijving', task.description),
+                  _row('Notitie', _note),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _editNote,
+            icon: const Icon(Icons.note_add_outlined),
+            label: Text((_note?.trim().isNotEmpty == true)
+                ? 'Notitie aanpassen'
+                : 'Notitie toevoegen'),
+          ),
+          const SizedBox(height: 10),
           if (task.workOrderId != null)
             FilledButton.tonalIcon(
               onPressed: () => Navigator.of(context).push(

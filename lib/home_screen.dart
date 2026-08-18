@@ -164,10 +164,21 @@ class _TaskListPageState extends State<TaskListPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(
-                '${widget.title} · ${tasks.length}',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              if (widget.scope == 'today') ...[
+                Text(
+                  'Vandaag',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${tasks.length} taken · ${tasks.map((t) => t.cemeteryName?.trim()).where((v) => v != null && v!.isNotEmpty).toSet().length} begraafplaatsen',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ] else
+                Text(
+                  '${widget.title} · ${tasks.length}',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               const SizedBox(height: 12),
               if (tasks.isEmpty)
                 const Card(
