@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -176,6 +177,30 @@ class ApiClient {
     final origin = '${api.scheme}://${api.authority}';
     if (trimmed.startsWith('/')) return '$origin$trimmed';
     return '$origin/${trimmed.replaceFirst(RegExp(r'^/+'), '')}';
+  }
+
+  Future<Uint8List> photoBytes(int photoId) async {
+    final response = await _http.get(
+      _uri('photo.php', {'id': '$photoId'}),
+      headers: _headers(),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      String message = 'Foto kon niet worden geladen.';
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['message'] != null) {
+          message = decoded['message'].toString();
+        }
+      } catch (_) {}
+      throw ApiException(
+        message,
+        statusCode: response.statusCode,
+      );
+    }
+    if (response.bodyBytes.isEmpty) {
+      throw const ApiException('De foto is leeg.');
+    }
+    return response.bodyBytes;
   }
 
   Future<List<OrderPhoto>> photos(int orderId) async {

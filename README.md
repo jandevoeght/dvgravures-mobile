@@ -1,24 +1,23 @@
-# DV Gravures Mobile v0.1.2
+# DV Gravures Mobile v0.1.3
 
-Tweede TestFlight-versie van de mobiele DV Gravures-app.
+## Belangrijk
+Deze mobiele versie hoort samen met **DV Gravures web/API v0.6.7.3**.
+Installeer eerst de web/API-update en bouw daarna de mobiele TestFlight-versie.
 
-## Nieuw in v0.1.2
-- foto-URL's uit de PHP API worden nu correct omgezet naar volledige HTTPS-URL's;
-- foto's in bestaande opdrachtdossiers kunnen daardoor op iPhone/iPad geladen worden;
-- kleuren zijn afgestemd op de desktopapp:
-  - donkerblauw `#123F78`
-  - middenblauw `#236FB8`
-  - accentblauw `#2F7FE5`
-  - lichtblauwe achtergrond `#EEF6FF`
-- het bestaande DV Gravures-logo uit de desktopapp is toegevoegd;
-- logo zichtbaar op login en in de hoofdnavigatie;
-- TestFlight export-compliance wordt via `ITSAppUsesNonExemptEncryption=false` in de iOS Info.plist vastgelegd.
+## Opgelost
+- bestaande foto’s worden niet meer rechtstreeks uit `/uploads` geladen;
+- de mobiele app haalt iedere foto beveiligd op via:
+  `GET /api/v1/photo.php?id={photo_id}`;
+- dezelfde Bearer-token/X-DV-API-Token authenticatie wordt daarbij gebruikt;
+- duidelijke laadindicator en foutmelding per foto;
+- knop `Opnieuw` wanneer een foto niet geladen kan worden;
+- camera/fotobibliotheek-aanroep is volledig afgevangen met foutmeldingen;
+- extra iOS-fotobibliotheektoestemming toegevoegd;
+- facturatietaken (`admin_code=INVOICE`) worden niet meer getoond in `Vandaag` en `Open taken`;
+- in een opdrachtdossier blijven alle taken wel zichtbaar voor de volledige context.
 
-## API
-`https://www.dvgravures.be/app/api/v1`
-
-## Build
-Bundle ID: `be.dvgravures.mobile`
-
-Codemagic workflow:
-`DV Gravures iOS TestFlight`
+## Ongewijzigd
+- vaste workflow blijft server-side;
+- DV Gravures kleuren en logo blijven behouden;
+- Bundle ID: `be.dvgravures.mobile`;
+- API-basis: `https://www.dvgravures.be/app/api/v1`.

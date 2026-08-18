@@ -115,7 +115,9 @@ class _TaskListPageState extends State<TaskListPage> {
             onRetry: _refresh,
           );
         }
-        final tasks = snapshot.data ?? const [];
+        final tasks = (snapshot.data ?? const <WorkTask>[])
+            .where((task) => task.adminCode != 'INVOICE')
+            .toList();
         return RefreshIndicator(
           onRefresh: _refresh,
           child: ListView(

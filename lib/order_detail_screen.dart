@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'api_client.dart';
@@ -27,6 +29,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _loading = true;
   bool _uploading = false;
   String? _error;
+  final Map<int, Future<Uint8List>> _photoCache = {};
 
   @override
   void initState() {
@@ -74,34 +77,71 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _takePhoto(ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: source,
-      imageQuality: 85,
-      maxWidth: 2400,
-    );
-    if (picked == null) return;
+    if (_uploading) return;
 
-    setState(() => _uploading = true);
     try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 2400,
+      );
+      if (picked == null) return;
+
+      if (!mounted) return;
+      setState(() => _uploading = true);
+
       await widget.api.uploadPhoto(
         orderId: widget.orderId,
         file: File(picked.path),
         caption: 'Mobiele foto',
       );
+
+      _photoCache.clear();
       await _load();
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto toegevoegd aan het dossier.')),
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      final message = switch (e.code) {
+        'camera_access_denied' =>
+          'Geen toegang tot de camera. Geef DV Gravures cameratoegang in de iPhone-instellingen.',
+        'photo_access_denied' =>
+          'Geen toegang tot de fotobibliotheek. Geef DV Gravures toegang tot Foto’s in de iPhone-instellingen.',
+        _ => 'Foto selecteren kon niet worden gestart (${e.code}).',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
       );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Foto toevoegen is mislukt. De app blijft actief; probeer opnieuw of controleer de iPhone-toestemmingen.',
+          ),
+        ),
+      );
     } finally {
-      if (mounted) setState(() => _uploading = false);
+      if (mounted && _uploading) {
+        setState(() => _uploading = false);
+      }
     }
+  }
+
+  Future<Uint8List> _photoBytes(OrderPhoto photo) {
+    return _photoCache.putIfAbsent(
+      photo.id,
+      () => widget.api.photoBytes(photo.id),
+    );
   }
 
   String _value(String key) => _order?[key]?.toString() ?? '';
@@ -264,13 +304,52 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.network(
-                                photo.url,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const ColoredBox(
-                                  color: Color(0xFFE6EBEF),
-                                  child: Icon(Icons.broken_image),
-                                ),
+                              FutureBuilder<Uint8List>(
+                                future: _photoBytes(photo),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState != ConnectionState.done) {
+                                    return const ColoredBox(
+                                      color: Color(0xFFE6EBEF),
+                                      child: Center(
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    );
+                                  }
+                                  if (snapshot.hasError || snapshot.data == null) {
+                                    return ColoredBox(
+                                      color: const Color(0xFFE6EBEF),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(Icons.broken_image_outlined),
+                                            const SizedBox(height: 6),
+                                            const Text(
+                                              'Foto kon niet laden',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _photoCache.remove(photo.id);
+                                                });
+                                              },
+                                              child: const Text('Opnieuw'),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return Image.memory(
+                                    snapshot.data!,
+                                    fit: BoxFit.cover,
+                                    gaplessPlayback: true,
+                                  );
+                                },
                               ),
                               if (photo.caption?.trim().isNotEmpty == true)
                                 Align(

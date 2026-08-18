@@ -17,7 +17,7 @@ workflows:
       vars:
         BUNDLE_ID: be.dvgravures.mobile
         APP_DISPLAY_NAME: DV Gravures
-        APP_VERSION: 0.1.2
+        APP_VERSION: 0.1.3
 
     scripts:
       - name: Flutter packages ophalen
@@ -48,6 +48,13 @@ workflows:
 
           /usr/libexec/PlistBuddy -c "Delete :NSPhotoLibraryUsageDescription" "$INFO" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string DV Gravures gebruikt de fotobibliotheek om foto's aan een opdracht toe te voegen." "$INFO"
+
+          /usr/libexec/PlistBuddy -c "Delete :NSPhotoLibraryAddUsageDescription" "$INFO" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string DV Gravures gebruikt Foto’s om afbeeldingen aan een opdracht toe te voegen." "$INFO"
+
+          # Voorkom een automatische beperkte-toegangsmelding van iOS; de app toont zelf fouten/toestemmingsinformatie.
+          /usr/libexec/PlistBuddy -c "Delete :PHPhotoLibraryPreventAutomaticLimitedAccessAlert" "$INFO" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :PHPhotoLibraryPreventAutomaticLimitedAccessAlert bool true" "$INFO"
 
           # De app implementeert zelf geen niet-vrijgestelde encryptie.
           /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$INFO" 2>/dev/null || true
