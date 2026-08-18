@@ -81,10 +81,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     try {
       final picker = ImagePicker();
+      // iOS: laat eerst de bottom sheet volledig sluiten voordat
+      // UIImagePickerController / PHPicker wordt gepresenteerd.
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+
       final picked = await picker.pickImage(
         source: source,
         imageQuality: 85,
         maxWidth: 2400,
+        requestFullMetadata: false,
+        preferredCameraDevice: CameraDevice.rear,
       );
       if (picked == null) return;
 
