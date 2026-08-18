@@ -173,10 +173,30 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
                 return Stack(
                   fit: StackFit.expand,
                   children: [
-                    Center(
-                      child: AspectRatio(
-                        aspectRatio: controller.value.aspectRatio,
-                        child: CameraPreview(controller),
+                    Positioned.fill(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final previewSize = controller.value.previewSize;
+                          if (previewSize == null) {
+                            return CameraPreview(controller);
+                          }
+
+                          // Camera previewSize is reported in the camera sensor's
+                          // natural (landscape) orientation. In portrait we swap
+                          // width/height and use BoxFit.cover so the preview fills
+                          // the available screen without stretching.
+                          return ClipRect(
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: previewSize.height,
+                                height: previewSize.width,
+                                child: CameraPreview(controller),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     Align(

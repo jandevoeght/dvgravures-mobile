@@ -91,7 +91,51 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   const SizedBox(height: 14),
-                  _row('Status', _done ? 'Afgewerkt' : task.statusName),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 118,
+                          child: Text(
+                            'Status',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (_done || task.isClosed)
+                                ? const Color(0xFFDCEFDC)
+                                : (task.statusName.toLowerCase().contains('geblokkeerd')
+                                    ? const Color(0xFFDFE3E8)
+                                    : (task.statusCode.toUpperCase() == 'FUTURE'
+                                        ? const Color(0xFFDCEcff)
+                                        : const Color(0xFFFFF0AD))),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            _done ? 'Afgewerkt' : task.statusName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                              color: (_done || task.isClosed)
+                                  ? const Color(0xFF25612C)
+                                  : (task.statusName.toLowerCase().contains('geblokkeerd')
+                                      ? const Color(0xFF4C5966)
+                                      : (task.statusCode.toUpperCase() == 'FUTURE'
+                                          ? const Color(0xFF205C9C)
+                                          : const Color(0xFF765900))),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   _row('Klant', task.companyName),
                   _row('Begraafplaats', task.cemeteryName),
                   _row('Ligging', task.graveLocation),

@@ -101,6 +101,55 @@ class _TaskListPageState extends State<TaskListPage> {
     await _future;
   }
 
+  Color _statusBackground(WorkTask task) {
+    final state = task.isClosed
+        ? 'DONE'
+        : (task.statusCode.isNotEmpty ? task.statusCode : 'ACTIVE').toUpperCase();
+
+    if (task.statusName.toLowerCase().contains('geblokkeerd') ||
+        state == 'BLOCKED') {
+      return const Color(0xFFDFE3E8);
+    }
+    if (state == 'DONE' ||
+        task.statusName.toLowerCase().contains('afgewerkt')) {
+      return const Color(0xFFDCEFDC);
+    }
+    if (state == 'FUTURE' ||
+        task.statusName.toLowerCase().contains('toekomst')) {
+      return const Color(0xFFDCEcff);
+    }
+    return const Color(0xFFFFF0AD);
+  }
+
+  Color _statusForeground(WorkTask task) {
+    final bg = _statusBackground(task);
+    if (bg == const Color(0xFFDFE3E8)) return const Color(0xFF4C5966);
+    if (bg == const Color(0xFFDCEFDC)) return const Color(0xFF25612C);
+    if (bg == const Color(0xFFDCEcff)) return const Color(0xFF205C9C);
+    return const Color(0xFF765900);
+  }
+
+  Widget _statusChip(WorkTask task) {
+    final label = task.statusName.trim().isNotEmpty
+        ? task.statusName
+        : (task.isClosed ? 'Afgewerkt' : 'Actief');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: _statusBackground(task),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: _statusForeground(task),
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<WorkTask>>(
@@ -159,7 +208,15 @@ class _TaskListPageState extends State<TaskListPage> {
                               task.graveLocation!,
                           ].join('\n'),
                         ),
-                        trailing: const Icon(Icons.chevron_right),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _statusChip(task),
+                            const SizedBox(height: 4),
+                            const Icon(Icons.chevron_right, size: 18),
+                          ],
+                        ),
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(

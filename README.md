@@ -1,19 +1,24 @@
-# DV Gravures Mobile v0.1.6
+# DV Gravures Mobile v0.1.7
 
-## Correctie na App Store Connect validatiefout 90683
+## Camera
+De camera-preview vult nu het beschikbare scherm met behoud van de juiste beeldverhouding.
+De vorige versie gebruikte de natuurlijke landscape aspect ratio rechtstreeks in portrait,
+waardoor de preview slechts ongeveer een kwart van het scherm innam.
 
-Apple weigerde v0.1.5 omdat `NSCameraUsageDescription` niet in de
-uiteindelijke `Runner.app/Info.plist` aanwezig was.
+De uiteindelijke foto-opname blijft ongewijzigd.
 
-v0.1.6:
-- gebruikt camera package `0.12.0+2`;
-- genereert eerst de iOS releaseconfiguratie;
-- schrijft daarna de privacykeys via Python `plistlib` rechtstreeks naar
-  `ios/Runner/Info.plist`;
-- vereist Camera én Microphone purpose strings zoals de officiële Flutter
-  camera-plugin documentatie voorschrijft;
-- controleert na het maken van de IPA opnieuw de `Info.plist` in
-  `Payload/Runner.app`;
-- Codemagic faalt vóór Publishing als de vereiste camerakey ontbreekt.
+## Taakstatussen
+De mobiele app gebruikt nu dezelfde statuskleuren als de desktopapp:
+- Actief: lichtgeel met donkergele tekst
+- Toekomstig: lichtblauw met blauwe tekst
+- Geblokkeerd: lichtgrijs met donkergrijze tekst
+- Afgewerkt: lichtgroen met donkergroene tekst
 
-De eigen DV Gravures-camera uit v0.1.5 blijft behouden.
+De statuskleur verschijnt:
+- in de lijst Vandaag/Open taken;
+- in het taakdetailscherm.
+
+## Build
+Versie: 0.1.7
+Bundle ID: be.dvgravures.mobile
+Workflow: DV Gravures iOS TestFlight
