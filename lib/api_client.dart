@@ -258,6 +258,32 @@ class ApiClient {
     );
   }
 
+
+  Future<void> updatePhotoCaption(int photoId, String caption) async {
+    final response = await _http.post(
+      _uri('photo-action.php'),
+      headers: _headers(json: true),
+      body: jsonEncode({
+        'id': photoId,
+        'action': 'caption',
+        'caption': caption,
+      }),
+    );
+    _decode(response);
+  }
+
+  Future<void> deletePhoto(int photoId) async {
+    final response = await _http.post(
+      _uri('photo-action.php'),
+      headers: _headers(json: true),
+      body: jsonEncode({
+        'id': photoId,
+        'action': 'delete',
+      }),
+    );
+    _decode(response);
+  }
+
   Future<void> completeManualTask(int taskId) async {
     final response = await _http.post(
       _uri('task-complete.php'),

@@ -1,17 +1,32 @@
-# DV Gravures Mobile v0.1.8
+# DV Gravures Mobile v0.1.9
 
-## Taken
-- facturatietaken worden nu zowel server-side als client-side uitgesloten;
-- de API levert workflow_state/workflow_step_code mee;
-- de volledige taaktegel krijgt de desktop-statuskleur:
-  - actief: geel;
-  - toekomstig: blauw;
-  - geblokkeerd: grijs;
-  - afgewerkt: groen;
-- de losse statusbadge in de takenlijst is verwijderd.
+## Vandaag
+Een taak die in de desktopapp via Agenda & Planning op vandaag wordt gezet gebruikt `planned_date`.
+De mobiele API neemt `planned_date` nu mee in scope `today`.
 
-## Camera
-De correcte full-screen camera-preview uit v0.1.7 blijft behouden.
+## Taakdetail
+Meer praktische informatie:
+- opdracht/overledene;
+- klant;
+- workflowstap;
+- begraafplaats + adres;
+- ligging;
+- geplande datum;
+- vervaldatum;
+- start;
+- prioriteit;
+- omschrijving;
+- status;
+- navigatie en dossierknop.
+
+## Foto’s
+- tik op een foto om ze schermvullend te openen;
+- pinch-to-zoom;
+- lang indrukken voor acties:
+  - openen;
+  - omschrijving aanpassen;
+  - verwijderen met bevestiging.
+- verwijderen is soft delete in de database.
 
 ## Vereist
-Installeer eerst DV Gravures web/API v0.6.7.7.
+Installeer eerst web/API v0.6.7.9.

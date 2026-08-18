@@ -28,6 +28,7 @@ class WorkTask {
   final String statusCode;
   final String statusName;
   final bool isClosed;
+  final String? plannedDate;
   final String? dueDate;
   final String? scheduledStart;
   final String? completedAt;
@@ -56,6 +57,7 @@ class WorkTask {
     required this.statusCode,
     required this.statusName,
     required this.isClosed,
+    this.plannedDate,
     this.dueDate,
     this.scheduledStart,
     this.completedAt,
@@ -100,6 +102,7 @@ class WorkTask {
         statusCode: json['status_code']?.toString() ?? '',
         statusName: json['status_name']?.toString() ?? '',
         isClosed: json['is_closed'] == true || json['is_closed'] == 1,
+        plannedDate: json['planned_date']?.toString(),
         dueDate: json['due_date']?.toString(),
         scheduledStart: json['scheduled_start']?.toString(),
         completedAt: json['completed_at']?.toString(),

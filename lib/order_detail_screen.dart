@@ -182,6 +182,166 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Future<void> _openPhoto(OrderPhoto photo) async {
+    Uint8List bytes;
+    try {
+      bytes = await _photoBytes(photo);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto kon niet worden geopend.')),
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            title: Text(
+              (photo.caption?.trim().isNotEmpty == true)
+                  ? photo.caption!
+                  : 'Foto',
+            ),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 5,
+              child: Image.memory(bytes, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editPhotoCaption(OrderPhoto photo) async {
+    final controller = TextEditingController(text: photo.caption ?? '');
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Foto-omschrijving'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Omschrijving',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Opslaan'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null) return;
+
+    try {
+      await widget.api.updatePhotoCaption(photo.id, value);
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto-omschrijving aangepast.')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    }
+  }
+
+  Future<void> _deletePhoto(OrderPhoto photo) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Foto verwijderen?'),
+        content: const Text(
+          'De foto verdwijnt uit het dossier. Deze actie kan niet vanuit de mobiele app ongedaan worden gemaakt.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Verwijderen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await widget.api.deletePhoto(photo.id);
+      _photoCache.remove(photo.id);
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto verwijderd.')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    }
+  }
+
+  Future<void> _showPhotoActions(OrderPhoto photo) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.fullscreen),
+              title: const Text('Openen'),
+              onTap: () => Navigator.pop(sheetContext, 'open'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_note),
+              title: const Text('Omschrijving aanpassen'),
+              onTap: () => Navigator.pop(sheetContext, 'caption'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Verwijderen'),
+              onTap: () => Navigator.pop(sheetContext, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    switch (action) {
+      case 'open':
+        await _openPhoto(photo);
+        break;
+      case 'caption':
+        await _editPhotoCaption(photo);
+        break;
+      case 'delete':
+        await _deletePhoto(photo);
+        break;
+    }
+  }
+
   String _value(String key) => _order?[key]?.toString() ?? '';
 
   Widget _kv(String label, String value) {
@@ -337,11 +497,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ),
                       itemBuilder: (context, i) {
                         final photo = _photos[i];
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => _openPhoto(photo),
+                            onLongPress: () => _showPhotoActions(photo),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
                               FutureBuilder<Uint8List>(
                                 future: _photoBytes(photo),
                                 builder: (context, snapshot) {
@@ -405,7 +571,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                     ),
                                   ),
                                 ),
-                            ],
+                                ],
+                              ),
+                            ),
                           ),
                         );
                       },
