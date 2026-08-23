@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text('DV Gravures'),
                 Text(
-                  'Mobile v0.3.0',
+                  'Mobile v0.3.1',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
                 ),
               ],
@@ -176,6 +176,13 @@ class _DayTaskPageState extends State<DayTaskPage> {
     return '';
   }
 
+  String _groupIdentity(WorkTask task) {
+    if (_groupBy == 'cemetery') {
+      return task.cemeteryId != null ? 'cemetery-${task.cemeteryId}' : 'without-cemetery';
+    }
+    return _groupKey(task);
+  }
+
   String _visualState(WorkTask task) {
     if (task.isClosed) return 'DONE';
     final workflow = task.workflowState?.toUpperCase() ?? '';
@@ -251,8 +258,11 @@ class _DayTaskPageState extends State<DayTaskPage> {
   List<Widget> _buildGrouped(List<WorkTask> tasks) {
     if (_groupBy == 'none') return tasks.map(_taskCard).toList();
     final groups = <String, List<WorkTask>>{};
+    final labels = <String, String>{};
     for (final task in tasks) {
-      groups.putIfAbsent(_groupKey(task), () => <WorkTask>[]).add(task);
+      final key = _groupIdentity(task);
+      groups.putIfAbsent(key, () => <WorkTask>[]).add(task);
+      labels.putIfAbsent(key, () => _groupKey(task));
     }
     final widgets = <Widget>[];
     for (final entry in groups.entries) {
@@ -263,7 +273,7 @@ class _DayTaskPageState extends State<DayTaskPage> {
             children: [
               Expanded(
                 child: Text(
-                  entry.key,
+                  labels[entry.key] ?? entry.key,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),

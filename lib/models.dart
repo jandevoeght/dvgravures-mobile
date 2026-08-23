@@ -38,6 +38,7 @@ class WorkTask {
   final String? orderTitle;
   final String? orderMode;
   final String? companyName;
+  final int? cemeteryId;
   final String? cemeteryName;
   final String? graveLocation;
   final String? cemeteryStreet;
@@ -72,6 +73,7 @@ class WorkTask {
     this.orderTitle,
     this.orderMode,
     this.companyName,
+    this.cemeteryId,
     this.cemeteryName,
     this.graveLocation,
     this.cemeteryStreet,
@@ -122,6 +124,7 @@ class WorkTask {
         orderTitle: json['order_title']?.toString(),
         orderMode: json['order_mode']?.toString(),
         companyName: json['company_name']?.toString(),
+        cemeteryId: (json['cemetery_id'] as num?)?.toInt(),
         cemeteryName: json['cemetery_name']?.toString(),
         graveLocation: json['grave_location']?.toString(),
         cemeteryStreet: json['cemetery_street']?.toString(),
