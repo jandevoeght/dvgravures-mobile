@@ -182,43 +182,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Future<void> _openPhoto(OrderPhoto photo) async {
-    Uint8List bytes;
-    try {
-      bytes = await _photoBytes(photo);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto kon niet worden geopend.')),
-      );
-      return;
-    }
-    if (!mounted) return;
-
+  Future<void> _openPhotoAt(int initialIndex) async {
+    if (_photos.isEmpty) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            title: Text(
-              (photo.caption?.trim().isNotEmpty == true)
-                  ? photo.caption!
-                  : 'Foto',
-            ),
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              minScale: 0.8,
-              maxScale: 5,
-              child: Image.memory(bytes, fit: BoxFit.contain),
-            ),
-          ),
+        builder: (_) => _PhotoGalleryScreen(
+          api: widget.api,
+          photos: _photos,
+          initialIndex: initialIndex,
         ),
       ),
     );
+    _photoCache.clear();
+    await _load();
   }
 
   Future<void> _editPhotoCaption(OrderPhoto photo) async {
@@ -331,7 +308,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     switch (action) {
       case 'open':
-        await _openPhoto(photo);
+        await _openPhotoAt(_photos.indexWhere((p) => p.id == photo.id));
         break;
       case 'caption':
         await _editPhotoCaption(photo);
@@ -341,6 +318,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         break;
     }
   }
+
+  String _plainText(String value) => value
+      .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+      .replaceAll(RegExp(r'</p>', caseSensitive: false), '\n')
+      .replaceAll(RegExp(r'<[^>]+>'), '')
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll('&amp;', '&')
+      .trim();
 
   String _value(String key) => _order?[key]?.toString() ?? '';
 
@@ -438,6 +423,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           _kv('Overledene', _value('deceased_name')),
                           _kv('Begraafplaats', _value('cemetery_name')),
                           _kv('Ligging', _value('grave_location')),
+                          _kv('Omschrijving', _plainText(_value('workflow_short_description'))),
+                          _kv('Wat graveren', _value('inscription_text')),
+                          _kv('Kleur', _value('engraving_color')),
+                          _kv('Lettertype', _value('font_name')),
                           _kv('Huidige stap', _value('current_step')),
                           _kv('Status', _value('main_status')),
                           if (_value('waiting_reason').isNotEmpty)
@@ -501,7 +490,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(12),
-                            onTap: () => _openPhoto(photo),
+                            onTap: () => _openPhotoAt(i),
                             onLongPress: () => _showPhotoActions(photo),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
@@ -584,3 +573,259 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 }
+
+class _PhotoGalleryScreen extends StatefulWidget {
+  final ApiClient api;
+  final List<OrderPhoto> photos;
+  final int initialIndex;
+
+  const _PhotoGalleryScreen({
+    required this.api,
+    required this.photos,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_PhotoGalleryScreen> createState() => _PhotoGalleryScreenState();
+}
+
+class _PhotoGalleryScreenState extends State<_PhotoGalleryScreen> {
+  late List<OrderPhoto> _photos;
+  late PageController _controller;
+  late int _index;
+  final Map<int, Future<Uint8List>> _cache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _photos = List<OrderPhoto>.from(widget.photos);
+    _index = widget.initialIndex.clamp(0, _photos.length - 1).toInt();
+    _controller = PageController(initialPage: _index);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<Uint8List> _bytes(OrderPhoto photo) =>
+      _cache.putIfAbsent(photo.id, () => widget.api.photoBytes(photo.id));
+
+  Future<void> _editCaption() async {
+    if (_photos.isEmpty) return;
+    final photo = _photos[_index];
+    final controller = TextEditingController(text: photo.caption ?? '');
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Commentaar bij foto'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 4,
+          decoration: const InputDecoration(labelText: 'Commentaar'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Opslaan'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null) return;
+    try {
+      await widget.api.updatePhotoCaption(photo.id, value);
+      if (!mounted) return;
+      setState(() {
+        _photos[_index] = OrderPhoto(
+          id: photo.id,
+          photoType: photo.photoType,
+          originalFilename: photo.originalFilename,
+          caption: value,
+          takenAt: photo.takenAt,
+          url: photo.url,
+        );
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  Future<void> _deleteCurrent() async {
+    if (_photos.isEmpty) return;
+    final photo = _photos[_index];
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Foto verwijderen?'),
+        content: const Text('De foto wordt uit het opdrachtdossier verwijderd.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Verwijderen'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await widget.api.deletePhoto(photo.id);
+      _cache.remove(photo.id);
+      if (!mounted) return;
+      setState(() {
+        _photos.removeAt(_index);
+        if (_photos.isNotEmpty && _index >= _photos.length) {
+          _index = _photos.length - 1;
+        }
+      });
+      if (_photos.isEmpty) {
+        if (mounted) Navigator.of(context).pop();
+        return;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_controller.hasClients) _controller.jumpToPage(_index);
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  void _move(int delta) {
+    if (_photos.isEmpty) return;
+    final next = (_index + delta).clamp(0, _photos.length - 1).toInt();
+    if (next != _index) {
+      _controller.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_photos.isEmpty) return const SizedBox.shrink();
+    final current = _photos[_index];
+    return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text('${_index + 1} / ${_photos.length}'),
+          actions: [
+            IconButton(
+              tooltip: 'Commentaar',
+              onPressed: _editCaption,
+              icon: const Icon(Icons.edit_note),
+            ),
+            IconButton(
+              tooltip: 'Verwijderen',
+              onPressed: _deleteCurrent,
+              icon: const Icon(Icons.delete_outline),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  PageView.builder(
+                    controller: _controller,
+                    itemCount: _photos.length,
+                    onPageChanged: (value) => setState(() => _index = value),
+                    itemBuilder: (context, i) {
+                      final photo = _photos[i];
+                      return FutureBuilder<Uint8List>(
+                        future: _bytes(photo),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState != ConnectionState.done) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasError || snapshot.data == null) {
+                            return const Center(
+                              child: Text('Foto kon niet laden.', style: TextStyle(color: Colors.white)),
+                            );
+                          }
+                          return InteractiveViewer(
+                            minScale: 1,
+                            maxScale: 5,
+                            child: Center(
+                              child: Image.memory(snapshot.data!, fit: BoxFit.contain),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  if (_index > 0)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton.filledTonal(
+                        onPressed: () => _move(-1),
+                        icon: const Icon(Icons.chevron_left),
+                      ),
+                    ),
+                  if (_index < _photos.length - 1)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton.filledTonal(
+                        onPressed: () => _move(1),
+                        icon: const Icon(Icons.chevron_right),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                color: const Color(0xFF101010),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      current.photoType?.trim().isNotEmpty == true ? current.photoType! : 'Foto',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                    ),
+                    if (current.caption?.trim().isNotEmpty == true) ...[
+                      const SizedBox(height: 4),
+                      Text(current.caption!, style: const TextStyle(color: Colors.white70)),
+                    ] else ...[
+                      const SizedBox(height: 4),
+                      const Text('Geen commentaar', style: TextStyle(color: Colors.white54)),
+                    ],
+                    const SizedBox(height: 5),
+                    const Text(
+                      'Swipe links/rechts voor vorige of volgende foto.',
+                      style: TextStyle(color: Colors.white38, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+  }
+}
+

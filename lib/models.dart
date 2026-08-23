@@ -48,6 +48,10 @@ class WorkTask {
   final String? workflowState;
   final String? workflowStepCode;
   final String? workflowStepName;
+  final String? orderDescription;
+  final String? engravingColor;
+  final String? fontName;
+  final String? inscriptionText;
 
   const WorkTask({
     required this.id,
@@ -78,6 +82,10 @@ class WorkTask {
     this.workflowState,
     this.workflowStepCode,
     this.workflowStepName,
+    this.orderDescription,
+    this.engravingColor,
+    this.fontName,
+    this.inscriptionText,
   });
 
   String get subject =>
@@ -124,6 +132,10 @@ class WorkTask {
         workflowState: json['workflow_state']?.toString(),
         workflowStepCode: json['workflow_step_code']?.toString(),
         workflowStepName: json['workflow_step_name']?.toString(),
+        orderDescription: json['order_description']?.toString(),
+        engravingColor: json['engraving_color']?.toString(),
+        fontName: json['font_name']?.toString(),
+        inscriptionText: json['inscription_text']?.toString(),
       );
 }
 

@@ -129,9 +129,10 @@ class ApiClient {
     );
   }
 
-  Future<List<WorkTask>> tasks({String scope = 'open', int? orderId}) async {
+  Future<List<WorkTask>> tasks({String scope = 'open', int? orderId, String? date}) async {
     final query = <String, String>{'scope': scope};
     if (orderId != null) query['order_id'] = '$orderId';
+    if (date != null && date.trim().isNotEmpty) query['date'] = date.trim();
     final response =
         await _http.get(_uri('tasks.php', query), headers: _headers());
     final data = _decode(response);

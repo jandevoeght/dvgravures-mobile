@@ -102,6 +102,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
   }
 
+  String _plainText(String? value) {
+    if (value == null) return '';
+    return value
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'</p>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .trim();
+  }
+
   Widget _row(String label, String? value) {
     if (value == null || value.trim().isEmpty) return const SizedBox.shrink();
     return Padding(
@@ -196,7 +207,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   _row('Vervaldatum', task.dueDate),
                   _row('Start', task.scheduledStart),
                   _row('Prioriteit', task.priority),
-                  _row('Omschrijving', task.description),
+                  _row('Opdracht', _plainText(task.orderDescription)),
+                  _row('Wat graveren', task.inscriptionText),
+                  _row('Kleur', task.engravingColor),
+                  _row('Lettertype', task.fontName),
+                  _row('Taak', task.description),
                   _row('Notitie', _note),
                 ],
               ),

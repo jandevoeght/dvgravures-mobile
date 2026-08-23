@@ -17,7 +17,7 @@ workflows:
       vars:
         BUNDLE_ID: be.dvgravures.mobile
         APP_DISPLAY_NAME: DV Gravures
-        APP_VERSION: 0.2.1
+        APP_VERSION: 0.3.0
 
     scripts:
       - name: Flutter packages ophalen
