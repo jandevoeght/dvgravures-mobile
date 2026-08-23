@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text('DV Gravures'),
                 Text(
-                  'Mobile v0.3.1',
+                  'Mobile v0.3.2',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
                 ),
               ],
@@ -495,6 +495,9 @@ class _TaskListPageState extends State<TaskListPage> {
       }).toList();
 
   String _groupKey(WorkTask task) {
+    if (_groupBy == 'taskType') {
+      return task.title.trim().isNotEmpty ? task.title.trim() : 'Andere taak';
+    }
     if (_groupBy == 'date') {
       return task.plannedDate?.trim().isNotEmpty == true
           ? task.plannedDate!
@@ -605,6 +608,7 @@ class _TaskListPageState extends State<TaskListPage> {
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'cemetery', child: Text('Per begraafplaats')),
                       PopupMenuItem(value: 'date', child: Text('Per datum')),
+                      PopupMenuItem(value: 'taskType', child: Text('Per taaktype')),
                       PopupMenuItem(value: 'none', child: Text('Geen groepering')),
                     ],
                     icon: const Icon(Icons.view_list),
