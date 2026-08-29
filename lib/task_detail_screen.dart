@@ -1,9 +1,12 @@
+import 'dart:io';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'api_client.dart';
 import 'models.dart';
 import 'order_detail_screen.dart';
+import 'camera_capture_screen.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final ApiClient api;
@@ -42,6 +45,18 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Future<void> _complete() async {
     setState(() => _busy = true);
     try {
+      if (widget.task.minPhotos > 0) {
+        final photo = await Navigator.of(context).push<XFile>(
+          MaterialPageRoute(builder: (_) => const CameraCaptureScreen()),
+        );
+        if (photo == null) return;
+        await widget.api.uploadPhoto(
+          orderId: widget.task.workOrderId!,
+          taskId: widget.task.id,
+          file: File(photo.path),
+          photoType: 'Taakfoto',
+        );
+      }
       await widget.api.completeManualTask(widget.task.id);
       if (!mounted) return;
       setState(() => _done = true);
@@ -255,10 +270,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               label: Text(_busy ? 'Bezig…' : 'Taak afwerken'),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'In deze eerste mobiele versie kunnen alleen handmatige taken rechtstreeks worden afgewerkt. Workflowtaken blijven door de bestaande workflow gestuurd.',
-              style: TextStyle(fontSize: 12),
-            ),
+            Text(widget.task.minPhotos > 0
+                ? 'Bij afwerken wordt eerst automatisch de camera geopend.'
+                : 'De taak wordt onmiddellijk afgewerkt.'),
           ],
         ],
       ),

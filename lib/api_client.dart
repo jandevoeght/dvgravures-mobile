@@ -232,6 +232,7 @@ class ApiClient {
     required File file,
     String caption = '',
     String photoType = 'Mobiele app',
+    int? taskId,
   }) async {
     final request = http.MultipartRequest(
       'POST',
@@ -241,6 +242,7 @@ class ApiClient {
     request.fields['caption'] = caption;
     request.fields['photo_type'] = photoType;
     request.fields['taken_at'] = DateTime.now().toIso8601String();
+    if (taskId != null) request.fields['task_id'] = '$taskId';
     request.files.add(await http.MultipartFile.fromPath('photo', file.path));
 
     final streamed = await _http.send(request);
@@ -302,6 +304,24 @@ class ApiClient {
     );
     _decode(response);
   }
+
+  Future<List<Cemetery>> cemeteries({String query = ''}) async {
+    final response=await _http.get(_uri('cemeteries.php',{if(query.trim().isNotEmpty)'q':query.trim()}),headers:_headers());
+    final data=_decode(response);return (data['cemeteries'] as List? ?? const []).whereType<Map>().map((e)=>Cemetery.fromJson(Map<String,dynamic>.from(e))).toList();
+  }
+
+  Future<List<Customer>> customers({String query = ''}) async {
+    final response=await _http.get(_uri('customers.php',{if(query.trim().isNotEmpty)'q':query.trim()}),headers:_headers());
+    final data=_decode(response);return (data['customers'] as List? ?? const []).whereType<Map>().map((e)=>Customer.fromJson(Map<String,dynamic>.from(e))).toList();
+  }
+
+  Future<List<ShoppingItem>> shoppingItems() async {
+    final response=await _http.get(_uri('shopping-list.php'),headers:_headers());final data=_decode(response);
+    return (data['items'] as List? ?? const []).whereType<Map>().map((e)=>ShoppingItem.fromJson(Map<String,dynamic>.from(e))).toList();
+  }
+  Future<void> addShoppingItem(String description,{String quantity='',String note=''}) async {final r=await _http.post(_uri('shopping-list.php'),headers:_headers(json:true),body:jsonEncode({'action':'add','description':description,'quantity':quantity,'note':note}));_decode(r);}
+  Future<void> toggleShoppingItem(int id,bool purchased) async {final r=await _http.post(_uri('shopping-list.php'),headers:_headers(json:true),body:jsonEncode({'action':'toggle','id':id,'purchased':purchased}));_decode(r);}
+  Future<void> deleteShoppingItem(int id) async {final r=await _http.post(_uri('shopping-list.php'),headers:_headers(json:true),body:jsonEncode({'action':'delete','id':id}));_decode(r);}
 
   void close() => _http.close();
 }

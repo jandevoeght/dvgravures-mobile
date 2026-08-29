@@ -1,4 +1,6 @@
-# DV Gravures Mobile v0.3.2
+# DV Gravures Mobile v0.3.3
+
+Nieuw: begraafplaatsen zoeken en navigeren via adres, klanten raadplegen, een gedeelde aankooplijst en automatisch een taakfoto maken bij het afwerken.
 
 Praktijkversie voor dagelijks gebruik.
 
@@ -15,4 +17,4 @@ Praktijkversie voor dagelijks gebruik.
 - Camera en fotobibliotheek blijven beschikbaar.
 - CarPlay maakt bewust geen deel uit van de app.
 
-Deze versie vereist server/API **DV Gravures v0.6.8.12** en SQL-upgrade `upgrade_v06812.sql`.
+Deze versie vereist server/API **DV Gravures v0.6.8.18**. Voer eerst `sql/upgrade_v06818.sql` uit voor de gedeelde aankooplijst.

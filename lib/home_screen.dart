@@ -4,6 +4,7 @@ import 'api_client.dart';
 import 'models.dart';
 import 'order_detail_screen.dart';
 import 'task_detail_screen.dart';
+import 'more_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ApiClient api;
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       DayTaskPage(api: widget.api),
       TaskListPage(api: widget.api, scope: 'open', title: 'Open taken'),
       OrderListPage(api: widget.api),
+      MoreScreen(api: widget.api),
     ];
 
     return Scaffold(
@@ -43,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text('DV Gravures'),
                 Text(
-                  'Mobile v0.3.2',
+                  'Mobile v0.3.3',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
                 ),
               ],
@@ -66,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(icon: Icon(Icons.today), label: 'Vandaag'),
           NavigationDestination(icon: Icon(Icons.checklist), label: 'Taken'),
           NavigationDestination(icon: Icon(Icons.folder_copy), label: 'Opdrachten'),
+          NavigationDestination(icon: Icon(Icons.more_horiz), label: 'Meer'),
         ],
       ),
     );

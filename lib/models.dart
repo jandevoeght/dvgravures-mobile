@@ -53,6 +53,7 @@ class WorkTask {
   final String? engravingColor;
   final String? fontName;
   final String? inscriptionText;
+  final int minPhotos;
 
   const WorkTask({
     required this.id,
@@ -88,6 +89,7 @@ class WorkTask {
     this.engravingColor,
     this.fontName,
     this.inscriptionText,
+    this.minPhotos = 0,
   });
 
   String get subject =>
@@ -139,7 +141,28 @@ class WorkTask {
         engravingColor: json['engraving_color']?.toString(),
         fontName: json['font_name']?.toString(),
         inscriptionText: json['inscription_text']?.toString(),
+        minPhotos: (json['min_photos'] as num?)?.toInt() ?? 0,
       );
+}
+
+class Cemetery {
+  final int id; final String name; final String street; final String houseNumber; final String postalCode; final String city;
+  const Cemetery({required this.id,required this.name,required this.street,required this.houseNumber,required this.postalCode,required this.city});
+  String get address => [[street,houseNumber].where((e)=>e.trim().isNotEmpty).join(' '),[postalCode,city].where((e)=>e.trim().isNotEmpty).join(' ')].where((e)=>e.isNotEmpty).join(', ');
+  factory Cemetery.fromJson(Map<String,dynamic> j)=>Cemetery(id:(j['id'] as num?)?.toInt()??0,name:j['name']?.toString()??'',street:j['street']?.toString()??'',houseNumber:j['house_number']?.toString()??'',postalCode:j['postal_code_raw']?.toString()??'',city:j['city_raw']?.toString()??'');
+}
+
+class Customer {
+  final int id; final String name; final String street; final String houseNumber; final String postalCode; final String city; final String phone; final String email; final String contactName; final String contactPhone; final String contactEmail;
+  const Customer({required this.id,required this.name,required this.street,required this.houseNumber,required this.postalCode,required this.city,required this.phone,required this.email,required this.contactName,required this.contactPhone,required this.contactEmail});
+  String get address => [[street,houseNumber].where((e)=>e.trim().isNotEmpty).join(' '),[postalCode,city].where((e)=>e.trim().isNotEmpty).join(' ')].where((e)=>e.isNotEmpty).join(', ');
+  factory Customer.fromJson(Map<String,dynamic> j)=>Customer(id:(j['id'] as num?)?.toInt()??0,name:j['name']?.toString()??'',street:j['street']?.toString()??'',houseNumber:j['house_number']?.toString()??'',postalCode:j['postal_code_raw']?.toString()??'',city:j['city_raw']?.toString()??'',phone:j['phone']?.toString()??'',email:j['email']?.toString()??'',contactName:j['contact_name']?.toString()??'',contactPhone:j['contact_phone']?.toString()??'',contactEmail:j['contact_email']?.toString()??'');
+}
+
+class ShoppingItem {
+  final int id; final String description; final String quantity; final String note; final bool purchased; final String createdByName;
+  const ShoppingItem({required this.id,required this.description,required this.quantity,required this.note,required this.purchased,required this.createdByName});
+  factory ShoppingItem.fromJson(Map<String,dynamic> j)=>ShoppingItem(id:(j['id'] as num?)?.toInt()??0,description:j['description']?.toString()??'',quantity:j['quantity']?.toString()??'',note:j['note']?.toString()??'',purchased:j['purchased']==true||j['purchased']==1,createdByName:j['created_by_name']?.toString()??'');
 }
 
 class WorkOrderSummary {
