@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text('DV Gravures'),
                 Text(
-                  'Mobile v0.3.3',
+                  'Mobile v0.3.4',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
                 ),
               ],

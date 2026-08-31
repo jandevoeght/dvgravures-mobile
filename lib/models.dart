@@ -160,9 +160,9 @@ class Customer {
 }
 
 class ShoppingItem {
-  final int id; final String description; final String quantity; final String note; final bool purchased; final String createdByName;
-  const ShoppingItem({required this.id,required this.description,required this.quantity,required this.note,required this.purchased,required this.createdByName});
-  factory ShoppingItem.fromJson(Map<String,dynamic> j)=>ShoppingItem(id:(j['id'] as num?)?.toInt()??0,description:j['description']?.toString()??'',quantity:j['quantity']?.toString()??'',note:j['note']?.toString()??'',purchased:j['purchased']==true||j['purchased']==1,createdByName:j['created_by_name']?.toString()??'');
+  final int id; final String description; final String category; final String quantity; final String note; final bool purchased; final String createdByName;
+  const ShoppingItem({required this.id,required this.description,required this.category,required this.quantity,required this.note,required this.purchased,required this.createdByName});
+  factory ShoppingItem.fromJson(Map<String,dynamic> j)=>ShoppingItem(id:(j['id'] as num?)?.toInt()??0,description:j['description']?.toString()??'',category:j['category']?.toString()??'',quantity:j['quantity']?.toString()??'',note:j['note']?.toString()??'',purchased:j['purchased']==true||j['purchased']==1,createdByName:j['created_by_name']?.toString()??'');
 }
 
 class WorkOrderSummary {
